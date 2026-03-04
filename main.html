@@ -2573,9 +2573,6 @@ First differences in predicted probabilities of vote intention based on
 prejudice scenarios
 </p>
 </div>
-</div>
-<div id="structural-equation-model-tables" class="section level1">
-<h1>Structural equation model tables</h1>
 <pre class="r"><code># Making radical right vote choice binary
 
 bes$rr_vote &lt;- ifelse(bes$generalElectionVote == 6, 1, 0)
@@ -2618,84 +2615,7 @@ kbl(coefs_psem) %&gt;%
   add_footnote(&quot;Models fit using piecewiseSEM. RRV = Radical right vote. *p &lt; .05, **p &lt; 0.01 , ***p &lt; 0.001&quot;, notation=&quot;none&quot;) %&gt;%
   cat(., file = &quot;figures/sem_res.html&quot;)
 
-r2_psem &lt;- summary(main_psem)$R2
-
-kbl(r2_psem) %&gt;%
-  kable_classic(full_width = F, html_font = &quot;Cambria&quot;)</code></pre>
-<table class=" lightable-classic" style="color: black; font-family: Cambria; width: auto !important; margin-left: auto; margin-right: auto;">
-<thead>
-<tr>
-<th style="text-align:left;">
-Response
-</th>
-<th style="text-align:left;">
-family
-</th>
-<th style="text-align:left;">
-link
-</th>
-<th style="text-align:left;">
-method
-</th>
-<th style="text-align:right;">
-R.squared
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-sdo
-</td>
-<td style="text-align:left;">
-gaussian
-</td>
-<td style="text-align:left;">
-identity
-</td>
-<td style="text-align:left;">
-none
-</td>
-<td style="text-align:right;">
-0.11
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-immig_att
-</td>
-<td style="text-align:left;">
-gaussian
-</td>
-<td style="text-align:left;">
-identity
-</td>
-<td style="text-align:left;">
-none
-</td>
-<td style="text-align:right;">
-0.33
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-rr_vote
-</td>
-<td style="text-align:left;">
-binomial
-</td>
-<td style="text-align:left;">
-logit
-</td>
-<td style="text-align:left;">
-nagelkerke
-</td>
-<td style="text-align:right;">
-0.25
-</td>
-</tr>
-</tbody>
-</table>
+r2_psem &lt;- summary(main_psem)$R2</code></pre>
 </div>
 <div id="mechanism-section" class="section level1">
 <h1>Mechanism section</h1>
@@ -3166,6 +3086,9 @@ Simulated GRD scores between income conditions and first differences
 between scenarios
 </p>
 </div>
+</div>
+<div id="structural-equation-model-tables" class="section level1">
+<h1>Structural equation model tables</h1>
 <pre class="r"><code>kbl(coefs_psem, booktabs = T, linesep = &quot;&quot;) %&gt;%
   kable_classic(full_width = F, html_font = &quot;Cambria&quot;) %&gt;%
   add_footnote(&quot;Models fit using piecewiseSEM. RRV = Radical right vote. *p &lt; .05, **p &lt; 0.01 , ***p &lt; 0.001&quot;, notation=&quot;none&quot;) %&gt;%

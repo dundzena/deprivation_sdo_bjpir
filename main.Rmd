@@ -536,7 +536,6 @@ axis(1, fd_seq, labels = c("No vote", "Conservative", "Labour", "LibDem", "Plaid
 
 ```
 
-# Structural equation model tables
 
 ```{r sem-code}
 
@@ -584,8 +583,6 @@ kbl(coefs_psem) %>%
 
 r2_psem <- summary(main_psem)$R2
 
-kbl(r2_psem) %>%
-  kable_classic(full_width = F, html_font = "Cambria")
 
 
 ```
@@ -989,6 +986,7 @@ legend(0.05, 260, legend=c("CI (95%)"),
 
 ```
 
+# Structural equation model tables
 
 ```{r SEM-tab}
 
