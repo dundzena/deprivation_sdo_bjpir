@@ -2616,7 +2616,7 @@ coefs_psem[,2] &lt;- c(&quot;GRD&quot;, &quot;IRD&quot;, &quot;Female&quot;, &qu
 kbl(coefs_psem) %&gt;%
   kable_classic(full_width = F, html_font = &quot;Cambria&quot;) %&gt;%
   add_footnote(&quot;Models fit using piecewiseSEM. RRV = Radical right vote. *p &lt; .05, **p &lt; 0.01 , ***p &lt; 0.001&quot;, notation=&quot;none&quot;) %&gt;%
-  cat(., file = &quot;sem_res.html&quot;)
+  cat(., file = &quot;figures/sem_res.html&quot;)
 
 r2_psem &lt;- summary(main_psem)$R2
 
@@ -2820,7 +2820,7 @@ t-values of the GRD estimate
 <h1>Urbanska Guimond replication</h1>
 <pre class="r"><code># loading the data
 
-urbanska_guimond &lt;- read.csv(&quot;urbanska_guimond.csv&quot;) # please download this dataset from the respective replication archive of the authors if you want to replicate it
+urbanska_guimond &lt;- read.csv(&quot;data/urbanska_guimond.csv&quot;) # please download this dataset from the respective replication archive of the authors if you want to replicate it
 
 # some data wrangling
 
@@ -4034,7 +4034,7 @@ stargazer(econ_prej, cultural_prej, type = &quot;latex&quot;, font.size = &quot;
 
 # loading data
 
-gtrends_ukip &lt;- readRDS(&quot;gtrends/gtrends_ukip.rds&quot;)
+gtrends_ukip &lt;- readRDS(&quot;data/gtrends_ukip.rds&quot;)
 
 res_ukip_2019 &lt;- gtrends_ukip$interest_over_time
 
@@ -4067,7 +4067,7 @@ abline(v = res_ukip_2019[49, 1])
 
 # saveRDS(res_labour_2019, file = &quot;gtrends/gtrends_labour.rds&quot;)
 
-gtrends_labour &lt;- readRDS(&quot;gtrends/gtrends_labour.rds&quot;)
+gtrends_labour &lt;- readRDS(&quot;data/gtrends_labour.rds&quot;)
 
 res_labour_2019 &lt;- gtrends_labour$interest_over_time
 
@@ -4097,7 +4097,7 @@ abline(v = res_labour_2019[49, 1])
 #saveRDS(res_con_2019, file = &quot;gtrends/gtrends_con.rds&quot;)
 
 
-gtrends_con &lt;- readRDS(&quot;gtrends/gtrends_con.rds&quot;)
+gtrends_con &lt;- readRDS(&quot;data/gtrends_con.rds&quot;)
 
 res_con_2019 &lt;- gtrends_con$interest_over_time
 
@@ -4129,7 +4129,7 @@ legend(y = 100, x = res_con_2019[22, 1], legend=c(&quot;BES W15 fieldwork&quot;,
 
 # saveRDS(res_libdem_2019, file = &quot;gtrends/gtrends_libdem.rds&quot;)
 
-gtrends_libdem &lt;- readRDS(&quot;gtrends/gtrends_libdem.rds&quot;)
+gtrends_libdem &lt;- readRDS(&quot;data/gtrends_libdem.rds&quot;)
 
 res_libdem_2019 &lt;- gtrends_libdem$interest_over_time
 
@@ -4158,7 +4158,7 @@ abline(v = res_libdem_2019[49, 1])
 
 # saveRDS(res_genel_2019, file = &quot;gtrends/gtrends_genel.rds&quot;)
 
-gtrends_genel &lt;- readRDS(&quot;gtrends/gtrends_genel.rds&quot;)
+gtrends_genel &lt;- readRDS(&quot;data/gtrends_genel.rds&quot;)
 
 res_genel_2019 &lt;- gtrends_genel$interest_over_time
 
@@ -4188,7 +4188,7 @@ abline(v = res_genel_2019[49, 1])
 
 # saveRDS(res_immig_2019, file = &quot;gtrends/gtrends_immig.rds&quot;)
 
-gtrends_immig &lt;- readRDS(&quot;gtrends/gtrends_immig.rds&quot;)
+gtrends_immig &lt;- readRDS(&quot;data/gtrends_immig.rds&quot;)
 
 res_immig_2019 &lt;- gtrends_immig$interest_over_time
 
@@ -4255,7 +4255,7 @@ tidytab &lt;- round(tidytab, 2)
 kbl(tidytab, row.names = T) %&gt;%
   kable_classic(full_width = F, html_font = &quot;Cambria&quot;) %&gt;%
   add_footnote(&quot;Two-sided t-tests.&quot;, notation=&quot;none&quot;) %&gt;%
-  cat(., file = &quot;t_res.html&quot;)
+  cat(., file = &quot;figures/t_res.html&quot;)
 
 kbl(tidytab, booktabs = T, linesep = &quot;&quot;, row.names = T) %&gt;%
   kable_classic(full_width = F, html_font = &quot;Cambria&quot;) %&gt;%
@@ -4520,7 +4520,7 @@ prejudice scenarios with ethnic minoritis included
 </div>
 <div id="objective-vs-subjective-economics" class="section level1">
 <h1>Objective vs subjective economics</h1>
-<pre class="r"><code>bes_income &lt;- readRDS(&quot;besW15_income.rds&quot;)
+<pre class="r"><code>bes_income &lt;- readRDS(&quot;data/besW15_income.rds&quot;)
 
 
 mod_income &lt;- polr(
@@ -4702,7 +4702,7 @@ coefs_psem[,2] &lt;- c(&quot;SDO&quot;, &quot;RWA&quot; , &quot;IRD&quot;, &quot
 kbl(coefs_psem) %&gt;%
   kable_classic(full_width = F, html_font = &quot;Cambria&quot;) %&gt;%
   add_footnote(&quot;Models fit using piecewiseSEM. RRV = Radical right vote. *p &lt; .05, **p &lt; 0.01 , ***p &lt; 0.001&quot;, notation=&quot;none&quot;) %&gt;%
-  cat(., file = &quot;sem_res2.html&quot;)
+  cat(., file = &quot;figures/sem_res2.html&quot;)
 
 r2_psem &lt;- summary(main_psem)$R2
 
@@ -4909,7 +4909,7 @@ summary(mod3_lr)</code></pre>
 ## 0.060051 0.314310 0.290460 0.117121 0.008092 0.105622 0.050681 0.053663 
 ## 
 ## nr method
-## 8 iterations, 0h:0m:1s 
+## 8 iterations, 0h:0m:2s 
 ## g&#39;(-H)^-1g = 1.89E-06 
 ## successive function values within tolerance limits 
 ## 

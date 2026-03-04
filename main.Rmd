@@ -580,7 +580,7 @@ coefs_psem[,2] <- c("GRD", "IRD", "Female", "Age", "Below university education",
 kbl(coefs_psem) %>%
   kable_classic(full_width = F, html_font = "Cambria") %>%
   add_footnote("Models fit using piecewiseSEM. RRV = Radical right vote. *p < .05, **p < 0.01 , ***p < 0.001", notation="none") %>%
-  cat(., file = "sem_res.html")
+  cat(., file = "figures/sem_res.html")
 
 r2_psem <- summary(main_psem)$R2
 
@@ -712,7 +712,7 @@ add_bound_to_contour(bounds = age_x35,
 
 # loading the data
 
-urbanska_guimond <- read.csv("urbanska_guimond.csv") # please download this dataset from the respective replication archive of the authors if you want to replicate it
+urbanska_guimond <- read.csv("data/urbanska_guimond.csv") # please download this dataset from the respective replication archive of the authors if you want to replicate it
 
 # some data wrangling
 
@@ -1081,7 +1081,7 @@ par(mfrow = c(2,3))
 
 # loading data
 
-gtrends_ukip <- readRDS("gtrends/gtrends_ukip.rds")
+gtrends_ukip <- readRDS("data/gtrends_ukip.rds")
 
 res_ukip_2019 <- gtrends_ukip$interest_over_time
 
@@ -1114,7 +1114,7 @@ abline(v = res_ukip_2019[49, 1])
 
 # saveRDS(res_labour_2019, file = "gtrends/gtrends_labour.rds")
 
-gtrends_labour <- readRDS("gtrends/gtrends_labour.rds")
+gtrends_labour <- readRDS("data/gtrends_labour.rds")
 
 res_labour_2019 <- gtrends_labour$interest_over_time
 
@@ -1144,7 +1144,7 @@ abline(v = res_labour_2019[49, 1])
 #saveRDS(res_con_2019, file = "gtrends/gtrends_con.rds")
 
 
-gtrends_con <- readRDS("gtrends/gtrends_con.rds")
+gtrends_con <- readRDS("data/gtrends_con.rds")
 
 res_con_2019 <- gtrends_con$interest_over_time
 
@@ -1176,7 +1176,7 @@ legend(y = 100, x = res_con_2019[22, 1], legend=c("BES W15 fieldwork", "EU elect
 
 # saveRDS(res_libdem_2019, file = "gtrends/gtrends_libdem.rds")
 
-gtrends_libdem <- readRDS("gtrends/gtrends_libdem.rds")
+gtrends_libdem <- readRDS("data/gtrends_libdem.rds")
 
 res_libdem_2019 <- gtrends_libdem$interest_over_time
 
@@ -1205,7 +1205,7 @@ abline(v = res_libdem_2019[49, 1])
 
 # saveRDS(res_genel_2019, file = "gtrends/gtrends_genel.rds")
 
-gtrends_genel <- readRDS("gtrends/gtrends_genel.rds")
+gtrends_genel <- readRDS("data/gtrends_genel.rds")
 
 res_genel_2019 <- gtrends_genel$interest_over_time
 
@@ -1235,7 +1235,7 @@ abline(v = res_genel_2019[49, 1])
 
 # saveRDS(res_immig_2019, file = "gtrends/gtrends_immig.rds")
 
-gtrends_immig <- readRDS("gtrends/gtrends_immig.rds")
+gtrends_immig <- readRDS("data/gtrends_immig.rds")
 
 res_immig_2019 <- gtrends_immig$interest_over_time
 
@@ -1307,7 +1307,7 @@ tidytab <- round(tidytab, 2)
 kbl(tidytab, row.names = T) %>%
   kable_classic(full_width = F, html_font = "Cambria") %>%
   add_footnote("Two-sided t-tests.", notation="none") %>%
-  cat(., file = "t_res.html")
+  cat(., file = "figures/t_res.html")
 
 kbl(tidytab, booktabs = T, linesep = "", row.names = T) %>%
   kable_classic(full_width = F, html_font = "Cambria") %>%
@@ -1499,7 +1499,7 @@ axis(1, fd_seq, labels = c("No vote", "Conservative", "Labour", "LibDem", "Plaid
 
 ```{r income}
 
-bes_income <- readRDS("besW15_income.rds")
+bes_income <- readRDS("data/besW15_income.rds")
 
 
 mod_income <- polr(
@@ -1664,7 +1664,7 @@ coefs_psem[,2] <- c("SDO", "RWA" , "IRD", "Female", "Age", "Below university edu
 kbl(coefs_psem) %>%
   kable_classic(full_width = F, html_font = "Cambria") %>%
   add_footnote("Models fit using piecewiseSEM. RRV = Radical right vote. *p < .05, **p < 0.01 , ***p < 0.001", notation="none") %>%
-  cat(., file = "sem_res2.html")
+  cat(., file = "figures/sem_res2.html")
 
 r2_psem <- summary(main_psem)$R2
 
