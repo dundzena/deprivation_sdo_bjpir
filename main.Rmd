@@ -1,0 +1,1776 @@
+---
+title: "Replication material for: What makes ethnic majorities support the radical right? A combination of relative deprivation and social dominance approaches"
+author: Domantas Undzėnas^[University of Mannheim, domantas.undzenas@uni-mannheim.de]
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+  pdf_document: default
+link-citations: yes
+toc: false
+editor_options:
+  markdown:
+    wrap: 72
+  chunk_output_type: inline
+always_allow_html: true
+---
+
+# Setup
+
+```{r packages}
+
+# this will check whether you have installed the packages needed and install/load them
+
+knitr::opts_chunk$set(echo = TRUE)
+
+p_needed <-
+  c("viridis", "knitr", "MASS", "fastDummies", "mlogit", "sensemakr", "psych", "stargazer", "dagitty", "gtrendsR", "tidyverse", "car", "piecewiseSEM", "kableExtra", "jmv", "broom")
+
+packages <- rownames(installed.packages())
+
+p_to_install <- p_needed[!(p_needed %in% packages)]
+
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+
+sapply(p_needed, require, character.only = TRUE)
+
+```
+
+```{r load-data}
+
+#loads the data
+
+# main BES data
+
+bes <- readRDS("data/besW15.rds")
+
+# with atuthoritarianism
+
+bes_auth <- readRDS("data/besW15_auth.rds")
+
+# wave 21 with authoritarianism
+
+bes_auth_21 <- readRDS("data/besW21_auth.rds")
+
+# wave 15 with left-right scale
+
+bes_lr <- readRDS("data/besW15_lr.rds")
+
+bes <- haven::zap_labels(bes)
+
+bes_full <- bes
+
+# only White Britons
+
+bes <- bes[bes$p_ethnicity == 1,]
+
+```
+
+# Reliability measures for SDO
+
+```{r reliability}
+
+# calculating the reliability parameters
+
+reliability_params <- reliability(
+    data = bes,
+    vars = c(
+        "sdoantiegal1",
+        "sdoantiegal2",
+        "sdoantiegal3",
+        "sdoantiegal4",
+        "sdodominance1",
+        "sdodominance2",
+        "sdodominance3",
+        "sdodominance4"),
+    omegaScale = T,
+    meanScale = T,
+    sdScale = T,
+    corPlot = T,
+    alphaItems = T,
+    omegaItems = T,
+    meanItems = T,
+    sdItems = T,
+    itemRestCor = T)
+
+omega_alpha <- reliability_params$scale$asDF
+
+```
+
+# Descriptive plots
+
+```{r descriptives-plot, fig.cap = "Distributions of the variables of interest for White and ethnic minority Britons", fig.asp=0.65, fig.width=14, fig.height=6}
+
+# Global layout
+par(mfrow = c(2, 4), mar = c(5, 6, 4, 2) + 0.1, oma = c(0, 6, 0, 0), 
+    cex.lab = 1.2, cex.axis = 1, cex.main = 1.2)
+
+
+# White Britons
+
+barplot(
+  table(bes_full$grd[bes_full$p_ethnicity == 1]),
+  xlab = "Group relative deprivation",
+  ylab = "Frequency",
+  ylim = c(0, max(table(bes_full$grd)))
+)
+
+hist(
+  bes_full$sdo[bes_full$p_ethnicity == 1],
+  main = "",
+  xlab = "Social dominance",
+  ylim = c(0, max(hist(bes_full$sdo, plot = F)$counts))
+)
+
+hist(
+  bes_full$immig_att[bes_full$p_ethnicity == 1],
+  main = "",
+  xlab = "Prejudice",
+  ylim = c(0, max(hist(bes_full$immig_att, plot = F)$counts))
+)
+
+
+par(mgp = c(3, 1.5, 0))  
+
+vote_white <- table(bes_full$generalElectionVote[bes_full$p_ethnicity == 1])
+vote_min   <- table(bes_full$generalElectionVote[bes_full$p_ethnicity == 0])
+
+
+barplot(
+  vote_white,
+  horiz = T,
+  las = 1,
+  cex.names = 1,
+  xlab = "Frequency of party choice",
+  names.arg = c(
+    "Would not vote",
+    "Conservatives",
+    "Labour",
+    "Liberal Democrat",
+    "Plaid Cymru",
+    "UKIP",
+    "Green Party",
+    "Other"
+  ),
+  xlim = c(0,800)
+)
+
+# Ethnic minorities
+
+par(mgp = c(3, 1, 0))  
+
+barplot(
+  table(bes_full$grd[bes_full$p_ethnicity == 0]),
+  xlab = "Group relative deprivation",
+  ylab = "Frequency",
+  ylim = c(0, max(table(bes_full$grd[bes_full$p_ethnicity == 0])))
+)
+
+hist(
+  bes_full$sdo[bes_full$p_ethnicity == 0],
+  main = "",
+  xlab = "Social dominance",
+  ylim = c(0, max(hist(bes_full$sdo[bes_full$p_ethnicity == 0], plot = F)$counts))
+)
+
+hist(
+  bes_full$immig_att[bes_full$p_ethnicity == 0],
+  main = "",
+  xlab = "Prejudice",
+  ylim = c(0, max(hist(bes_full$immig_att[bes_full$p_ethnicity == 0], plot = F)$counts))
+)
+
+# Vote choice (minority) with adjusted label spacing
+par(mgp = c(3, 1.5, 0))  
+barplot(
+  vote_min,
+  horiz = T,
+  las = 1,
+  cex.names = 1,
+  xlab = "Frequency of party choice",
+  names.arg = c(
+    "Would not vote",
+    "Conservatives",
+    "Labour",
+    "Liberal Democrat",
+    "Plaid Cymru",
+    "UKIP",
+    "Green Party",
+    "Other"
+  ),
+  xlim = c(0,150)
+)
+
+# Labels
+
+mtext("White", side = 2, outer = T, line = 3, at = 0.75, cex = 1.3, font = 2)
+mtext("Minority", side = 2, outer = T, line = 3, at = 0.25, cex = 1.3, font = 2)
+
+
+```
+
+# Main analyses
+
+```{r grd-sdo}
+
+# setting the number of simulations I use
+
+nsim <- 1000
+
+# random seed for reproducibility
+
+set.seed(28042023)
+
+# number 1, GRD -> SDO
+
+mod1 <- lm(sdo ~ grd + ird + gender + age + factor(p_education) + p_gross_household + factor(urban), data = bes)
+
+# summary for checking results. note that the labels here are not informative
+
+summary(mod1)
+
+# doing the same but adding wave 14 authoritarianism
+
+mod1_a <- lm(sdo ~ grd + auth + ird + gender + age + factor(p_education) + p_gross_household + factor(urban), data = bes_auth[bes_auth$p_ethnicity == 1,])
+
+# summary for checking results. note that the labels here are not informative
+
+
+mod2_a <- lm(auth ~ grd + ird + gender + age + factor(p_education) + p_gross_household + factor(urban), data = bes_auth_21[bes_auth_21$p_ethnicity == 1,])
+
+
+# simulating
+
+sim_func <- function(nsim, beta, varcov){
+  
+  S <- mvrnorm(nsim, beta, varcov)
+  
+  return(S)
+}
+
+# simulates alternative worlds
+
+S <- sim_func(nsim, beta = mod1$coefficients, varcov = vcov(mod1))
+
+# gets the data matrix for observed value approach
+
+ova_X <- as.matrix(cbind(1, bes$grd, bes$ird, bes$gender, bes$age, dummy_cols(bes$p_education)[,-c(1,2)], bes$p_gross_household, bes$urban))
+
+# preparing to set up scenarios
+
+cases <- array(NA, c(dim(ova_X), 2))
+
+cases[, ,] <- ova_X
+
+# setting the scenario where everyone either has no relative deprivation vs large relative deprivation
+
+sel <- which(colnames(ova_X) == "bes$grd")
+
+cases[, sel, 1] <-  0
+
+cases[, sel, 2] <-  1
+
+# putting in the simulated SDO scores here
+
+val <- matrix(NA, nrow = nsim, ncol = 2)
+
+for (i in 1:2) {
+  
+  val[,i] <- apply(S%*%t(cases[,,i]),1, mean)
+  
+}
+
+# first differences in SDO scores between no relative deprivation vs high relative deprivation
+
+fd <- val[,2] - val[,1]
+
+
+```
+
+```{r prej-sim}
+# another random seed
+
+set.seed(02052023)
+
+# analysis number 2 SDO -> Prejudice aganst immigrants
+
+mod2 <- lm(immig_att ~ sdo  + gender + age + factor(p_education) + p_gross_household + factor(urban), data = bes)
+
+summary(mod2)
+
+# simulates alternative worlds
+
+S <- sim_func(nsim, beta = mod2$coefficients, varcov = vcov(mod2))
+
+# gets the data matrix for observed value approach
+
+ova_X <- as.matrix(cbind(1, bes$sdo, bes$gender, bes$age, dummy_cols(bes$p_education)[,-c(1,2)], bes$p_gross_household, bes$urban))
+
+# preparing to set up scenarios
+
+cases <- array(NA, c(dim(ova_X), 2))
+
+cases[, ,] <- ova_X
+
+# setting the scenario where the first value is the mean of the estimated SDO scores of no GRD people with the second value is being estimated with the estimated SDO scores of people with high GRD
+
+sel <- which(colnames(ova_X) == "bes$sdo")
+
+cases[, sel, 1] <- rnorm(n = nrow(bes), mean = mean(val[,1]), sd = sd(val[,1])) 
+
+cases[, sel, 2] <- rnorm(n = nrow(bes), mean = mean(val[,2]), sd = sd(val[,2]))
+
+
+# putting in the simulated SDO scores here
+
+val2 <- matrix(NA, nrow = nsim, ncol = 2)
+
+for (i in 1:2) {
+  
+  val2[,i] <- apply(S%*%t(cases[,,i]),1, mean)
+  
+}
+
+# differences in prejudice scores between no relative deprivation vs high relative deprivation
+
+fd2 <- val2[,2] - val2[,1]
+
+
+
+```
+
+
+```{r prej-sdo-sim-fd, fig.cap = "Empirical distributions of the estimated effects of GRD on SDO and SDO on prejudice", fig.asp=0.65}
+
+par(mfrow = c(1, 2))
+
+# histogram of first differences 1
+
+hist(fd, xlim = c(0.05, 0.3), ylim = c(0, 270), main = "(a) Estimated SDO", xlab = "Simulated first differences")
+abline(
+  v = quantile(fd, c(0.025, 0.975)),
+  col = "grey",
+  lty = "dashed"
+)
+text(mean(fd), 260, round(mean(fd), 3))
+
+# histogram 2
+
+hist(fd2, xlim = c(0.08, 0.18), ylim = c(0, 400), main = "(b) Estimated Prejudice", xlab = "Simulated first differences")
+abline(
+  v = quantile(fd2, c(0.025, 0.975)),
+  col = "grey",
+  lty = "dashed"
+)
+text(mean(fd2), 400, round(mean(fd2), 3))
+legend(0.14, 350, legend=c("CI (95%)"),
+       col=c("darkgrey"), lty=2, cex=0.6)
+
+
+
+```
+
+```{r multinom-sim}
+
+# analysis part 3 Immigration attitudes -> Radical right voting
+
+# this prepares the data for a multinomial logit
+
+bes$generalElectionVote <- factor(bes$generalElectionVote)
+bes$generalElectionVote <- relevel(bes$generalElectionVote, ref = "0")
+
+# turns data into the "wide" format
+
+bes2 <- mlogit.data(data = bes, choice = "generalElectionVote", shape = "wide")
+
+# and runs the multinomial logit regression
+# here, it only has chooser(individual)-specific covariates
+
+mod3 <- mlogit(generalElectionVote ~ 0 | immig_att + gender + age + factor(p_education) + p_gross_household + factor(urban), data = bes2,  reflevel = "0")
+
+summary(mod3)
+
+# simulating again...
+
+S <- sim_func(nsim, coef(mod3), varcov = vcov(mod3))
+
+J <- length(unique(bes$generalElectionVote))  # Number of categories
+k <- 9 # number of independent variables + intercept
+
+
+# store in an array 
+beta_S <- array(0, dim = c(J, k, nsim))
+
+
+# check dimensions
+dim(beta_S)
+
+
+# fill the array with the sampling distribution of betas
+for(sim in 1:nsim) {
+  beta_S[-1, ,sim] <- matrix(S[sim,], 
+                             ncol = k, 
+                             byrow = F)
+}
+
+# OVA again
+
+X <- as.matrix(cbind(1, bes$immig_att, bes$gender, bes$age, dummy_cols(bes$p_education)[,-c(1,2)],bes$p_gross_household, bes$urban))
+
+# Set up your scenarios
+n_scenarios <- 2 # Number of scenarios
+cases <- array(NA, c(dim(X),
+                     n_scenarios))  
+
+# put in te OVA dataset as all of the scenarios
+
+cases[, , ] <- X
+
+# selecting which column has the immigration attitudes
+
+sel <- 2
+
+cases[, sel, 1] <- rnorm(n = nrow(bes), mean = mean(val2[,1]), sd = sd(val2[,1]))
+cases[, sel, 2] <- rnorm(n = nrow(bes), mean = mean(val2[,2]), sd = sd(val2[,2]))
+
+V  <-
+  array(NA, 
+        dim = c(nrow(X),       # number of observations
+                J,             # number of categories
+                nsim,          # number of simulations
+                n_scenarios))  # number of scenarios
+
+# loop over the scenarios
+for(i in 1:n_scenarios){
+  V[,,,i] <- apply(beta_S[,,], c(1,3), 
+                   function(bs) cases[,,i] %*% bs)
+}
+
+# dimensions again
+dim(V)
+
+# sum of all of the expected utilities to vote for parties
+Sexp <- apply(V, c(1,3,4), function(v) sum(exp(v)))
+
+#dimensions look fine
+dim(Sexp)
+
+# predicted probabilities of voting for each party
+P <- array(NA, c(nsim, J, 2))
+for (scen in 1:n_scenarios) {
+  for (category in 1:J) {
+    P[, category, scen] <- 
+      apply(exp(V[, category, , scen]) / Sexp[, , scen], 2, mean)
+  }
+}
+# quantities of interest
+# low prejudice voters
+QoI0Mean <- apply(P[, , 1], 2, mean)
+QoI0CI <-
+  apply(P[, , 1], 2, function(x)
+    quantile(x, probs = c(0.025, 0.975)))
+# high prejudice voters
+QoI1Mean <- apply(P[, , 2], 2, mean)
+QoI1CI <-
+  apply(P[, , 2], 2, function(x)
+    quantile(x, probs = c(0.025, 0.975)))
+```
+
+
+```{r pred-prob-fd, fig.cap = "First differences in predicted probabilities of vote intention based on prejudice scenarios", fig.height = 6, fig.width = 10, fig.asp=0.65}
+
+
+# first differences again, yayyy
+QoIFD <- P[, , 2] - P[, , 1]
+
+QoIFDMean <- apply(QoIFD, 2, mean)
+
+QoIFDCI <-
+  apply(QoIFD, 2, function(x)
+    quantile(x, probs = c(0.025, 0.975)))
+
+fd_seq <- seq(0,1, length.out = length(QoIFDMean))
+
+plot(
+  x = fd_seq,
+  y = QoIFDMean,
+  xlim = c(-0.025, 1.025),
+  ylim = c(-0.1, 0.1),
+  xaxt = "n",
+  bty = "n",
+  las = 1,
+  xlab = "",
+  ylab = "First difference (95% CI)",
+  main = "",
+  font.main = 1
+)
+
+abline(h = 0, lwd = 1, lty = "dashed", col = "black")
+points(
+  x = fd_seq,
+  y = QoIFDMean,
+  pch = 19,
+  cex = 1
+)
+
+segments(
+  x0 = fd_seq,
+  y0 = QoIFDCI[1,],
+  y1 = QoIFDCI[2,],
+  lwd = 1,
+  lend = 1
+)
+abline(v = fd_seq + (fd_seq[1]-fd_seq[2])/2,
+       lty = "dashed",
+       col = "lightgrey")
+abline(h = seq(0.05,1, by = 0.05), lty = "dashed",
+       col = "lightgrey")
+abline(h = seq(-1,-0.05, by = 0.05), lty = "dashed",
+       col = "lightgrey")
+
+axis(1, fd_seq, labels = c("No vote", "Conservative", "Labour", "LibDem", "Plaid Cymru", "UKIP", "Greens", "Other"))
+
+
+
+```
+
+# Structural equation model tables
+
+```{r sem-code}
+
+# Making radical right vote choice binary
+
+bes$rr_vote <- ifelse(bes$generalElectionVote == 6, 1, 0)
+
+# Dummies for education
+
+bes <- dummy_cols(bes, 
+                   select_columns = "p_education")
+
+
+
+# Running the SEM
+
+main_psem <- psem(
+  lm(sdo ~ grd + ird + gender + age + p_education_2 +  p_education_3 +  p_education_4 + p_gross_household + urban , data = bes),
+  
+  lm(immig_att ~  sdo + grd  + ird + gender + age + p_education_2 +  p_education_3 +  p_education_4 + p_gross_household + urban , data = bes), 
+  
+  glm(rr_vote ~ grd + sdo + immig_att + ird + gender + age + p_education_2 +  p_education_3 +  p_education_4 + p_gross_household + urban, family = binomial(link = "logit"), data = bes),
+  
+  data = bes
+  
+)
+
+
+# Table for the results
+
+coefs_psem <- summary(main_psem)$coefficients
+
+coefs_psem <- coefs_psem[,-c(5, 8)]
+
+coefs_psem <- modify_if(coefs_psem, ~is.numeric(.), ~round(., 2))
+
+coefs_psem[,1] <- c("SDO", "SDO","SDO","SDO","SDO","SDO","SDO","SDO", "SDO", "Prejudice", "Prejudice","Prejudice","Prejudice","Prejudice","Prejudice","Prejudice","Prejudice", "Prejudice", "Prejudice", "RRV", "RRV","RRV","RRV","RRV","RRV","RRV","RRV","RRV","RRV", "RRV")
+
+coefs_psem[,2] <- c("GRD", "IRD", "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income", "Urban", "SDO", "GRD", "IRD", "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income", "Urban", "GRD", "SDO", "Prejudice", "IRD", "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income", "Urban")
+
+kbl(coefs_psem) %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  add_footnote("Models fit using piecewiseSEM. RRV = Radical right vote. *p < .05, **p < 0.01 , ***p < 0.001", notation="none") %>%
+  cat(., file = "sem_res.html")
+
+r2_psem <- summary(main_psem)$R2
+
+kbl(r2_psem) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+
+```
+
+# Mechanism section
+
+```{r sem-plot}
+
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(rsvg)
+library(magrittr)
+
+SEM_plot <- grViz("     
+digraph CFA{
+
+# main
+node [shape=rectangle]
+GRD; 
+SDO;
+Prejudice;
+RRV;
+
+#regressions
+GRD -> SDO [label='0.18***'];
+GRD -> Prejudice [label='0.39***'];
+GRD -> RRV [label='1.35***'];
+
+SDO -> Prejudice [label='0.55***'];
+
+Prejudice -> RRV [label='3.01***']
+
+}      
+")
+
+SEM_plot %>%
+export_svg() %>%
+charToRaw %>%
+rsvg_pdf("figures/fig7.pdf")
+
+
+```
+
+# Sensitivity analysis
+
+```{r sensitivity-analysis, fig.cap = "Hypothetical confounders on the GRD to SDO path and their effects on the t-values of the GRD estimate", fig.asp=0.65}
+
+
+# playing around with omitted variable bias
+
+# setting up the plot
+ovb_contour_plot(mod1,  
+                 treatment = "grd",
+                 lim = 0.8, col.thr.line = "black", sensitivity.of = "t-value", xlab = "Partial R-squared of counfounder with GRD",  ylab = "Partial R-squared of counfounder with SDO")
+
+# adding a hypothetical confounder 5 times stronger than HH income
+
+hh_income_x10 <- ovb_bounds(model = mod1, 
+                           treatment = "grd", 
+                           benchmark_covariates = "p_gross_household", 
+                           kd = 10, ky = 10)
+
+
+add_bound_to_contour(bounds = hh_income_x10,
+                     bound_label = "HH income 10X", point.bg = "black")
+
+
+# adding a hypothetical confounder that is 20 times as strong as getting a university education compared to having no qualifications
+
+uni_ed_x20 <- ovb_bounds(model = mod1, 
+                           treatment = "grd", 
+                           benchmark_covariates = "factor(p_education)3", 
+                           kd = 20, ky = 20)
+
+
+add_bound_to_contour(bounds = uni_ed_x20,
+                     bound_label = "University education 20X", point.bg = "black")
+
+# adding a hypothetical confounder that is 3 times as strong as GRD
+
+ird_x3 <- ovb_bounds(model = mod1, 
+                           treatment = "grd", 
+                           benchmark_covariates = "ird", 
+                           kd = 3, ky = 3)
+
+
+add_bound_to_contour(bounds = ird_x3,
+                     bound_label = "IRD 3X", point.bg = "black")
+
+# adding a hypothetical confounder that is 25 times as strong as being a female
+
+female_x25 <- ovb_bounds(model = mod1, 
+                           treatment = "grd", 
+                           benchmark_covariates = "gender", 
+                           kd = 25, ky = 25)
+
+
+add_bound_to_contour(bounds = female_x25,
+                     bound_label = "Female 25X", point.bg = "black")
+
+
+# adding a confounder that is 35 times as strong as age
+
+age_x35 <- ovb_bounds(model = mod1, 
+                           treatment = "grd", 
+                           benchmark_covariates = "age", 
+                           kd = 35, ky = 35)
+
+
+add_bound_to_contour(bounds = age_x35,
+                     bound_label = "Age 35X", point.bg = "black")
+
+
+
+```
+
+
+
+# Appendix {-}
+
+# Urbanska Guimond replication
+
+```{r urbanska_guimond-data}
+
+# loading the data
+
+urbanska_guimond <- read.csv("urbanska_guimond.csv") # please download this dataset from the respective replication archive of the authors if you want to replicate it
+
+# some data wrangling
+
+urbanska_guimond$sdo <- scales::rescale(urbanska_guimond$sdo, to = c(0, 1))
+
+urbanska_guimond$grd <- scales::rescale(urbanska_guimond$GRD, to = c(0, 1))
+
+urbanska_guimond$ird <- scales::rescale(urbanska_guimond$IRD, to = c(0, 1))
+
+urbanska_guimond$prej <- scales::rescale(urbanska_guimond$prej, to = c(0, 1))
+
+urbanska_guimond$voteER <- scales::rescale(urbanska_guimond$voteER, to = c(0, 1))
+
+urbanska_guimond <- urbanska_guimond[,c("sdo", "grd", "ird","prej", "voteER" )]
+
+urbanska_guimond <- na.omit(urbanska_guimond)
+
+mod1_u <- lm(sdo ~ grd + ird, data = urbanska_guimond)
+
+summary(mod1_u)
+
+mod2_u <- lm(prej ~ sdo, data = urbanska_guimond)
+
+summary(mod2_u)
+
+mod3_u <- lm(voteER ~ prej, data = urbanska_guimond)
+
+summary(mod3_u)
+
+
+urbanska_guimond_sem <- psem(
+  lm(sdo ~ grd + ird, data = urbanska_guimond),
+   lm(prej ~ sdo + grd  + ird , data = urbanska_guimond), 
+  lm(voteER ~ prej + grd + sdo + ird, data = urbanska_guimond),
+  data = urbanska_guimond
+  
+)
+
+```
+
+# Tables for the main regressions
+
+```{r mod-tab1, results = "asis"}
+
+stargazer(mod1, mod2, type = "latex", no.space = T, font.size = "tiny", omit.stat=c("ser","f"), star.char = c("*", "**", "***"), star.cutoffs = c(.05, .01, .001), notes = c("\\parbox[t]{4cm}{*p < .05, **p < .01, ***p < .001}", "Standard errors in parentheses", "Reference categories: Education - No Qualification"), notes.append = F, dep.var.labels=c("SDO","Prejudice"),covariate.labels=c("GRD", "IRD", "SDO", "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income"), header = F, title = "Models 1 and 2 used for the SDO and prejudice simulations", out = "figures/tab1.html")
+
+
+```
+
+```{r mod-tab2, results = "asis"}
+
+stargazer(mod3, type = "latex", no.space = T, font.size = "tiny", single.row = T, star.char = c("*", "**", "***"), star.cutoffs = c(.05, .01, .001), notes = c("\\parbox[t]{4cm}{*p < .05, **p < .01, ***p < .001}", "Standard errors in parentheses", "Reference categories: Education - No Qualification", "Vote choice - Would not vote"), notes.append = F, dep.var.labels=c("General election vote"),covariate.labels=c("Intercept: Conservatives", "Intercept: Labour", "Intercept: LibDem", "Intercept: Plaid Cymru", "Intercept: UKIP", "Intercept: Greens", "Intercept: Other party", "Prejudice: Conservatives", "Prejudice: Labour", "Prejudice: LibDem", "Prejudice: Plaid Cymru", "Prejudice: UKIP", "Prejudice: Greens", "Prejudice: Other party", "Female: Conservatives", "Female: Labour", "Female: LibDem", "Female: Plaid Cymru", "Female: UKIP", "Female: Greens", "Female: Other party", "Age: Conservatives", "Age: Labour", "Age: LibDem", "Age: Plaid Cymru", "Age: UKIP", "Age: Greens", "Age: Other party", "Below university education: Conservatives", "Below university education: Labour", "Below university education: LibDem", "Below university education: Plaid Cymru", "Below university education: UKIP", "Below university education: Greens", "Below university education: Other party", "University education: Conservatives", "University education: Labour", "University education: LibDem", "University education: Plaid Cymru", "University education: UKIP", "University education: Greens", "University education: Other party", "Unspecified education: Conservatives", "Unspecified education: Labour", "Unspecified education: LibDem", "Unspecified education: Plaid Cymru", "Unspecified education: UKIP", "Unspecified education: Greens", "Unspecified education: Other party", "Household income: Conservatives", "Household income: Labour", "Household income: LibDem", "Household income: Plaid Cymru", "Household income: UKIP", "Household income: Greens", "Household income: Other party" ), header = F, title = "Model 3 used for the vote probability simulations", out = "figures/tab2.html")
+
+```
+
+
+# Are people who express GRD poorer?
+
+```{r grd-income}
+
+# the model
+
+grd_mod <- lm(grd ~ factor(p_gross_household) + ird + age + gender + factor(p_education), data = bes)
+
+summary(grd_mod)
+
+# random seed for reproducibility
+
+set.seed(10102023)
+
+# simulates alternative worlds
+
+S <- sim_func(nsim, beta = grd_mod$coefficients, varcov = vcov(grd_mod))
+
+# gets the data matrix for observed value approach
+
+ova_X <- as.matrix(cbind(1, dummy_cols(bes$p_gross_household)[,-c(1,2)], bes$ird,  bes$age, bes$gender, dummy_cols(bes$p_education)[,-c(1,2)]))
+
+# preparing to set up scenarios
+
+cases <- array(NA, c(dim(ova_X), 5))
+
+cases[, ,] <- ova_X
+
+
+# we make everyone super poor here
+
+cases[, 2:15, 1] <- 0
+
+# and then make everyone have median HH income
+
+cases[, 2:15, 2] <- 0
+
+cases[, median(bes$p_gross_household), 2] <- 1
+
+# and now everyone is super rich!
+
+cases[, 2:15, 3] <- 0
+
+cases[, max(bes$p_gross_household), 3] <- 1
+
+# 2nd lowest income category 
+
+cases[, 2:15, 4] <- 0
+
+cases[, min(bes$p_gross_household) + 1, 4] <- 1
+
+# 2nd highest income category
+
+cases[, 2:15, 5] <- 0
+
+cases[, max(bes$p_gross_household) - 1, 5] <- 1
+
+# putting in the simulated GRD scores here
+
+val <- matrix(NA, nrow = nsim, ncol = 5)
+
+for (i in 1:5) {
+  
+  val[,i] <- apply(S%*%t(cases[,,i]),1, mean)
+  
+}
+
+# first differences in GRD scores between different income brackets
+
+# median vs poor
+
+fd_median_poor <- val[,2] - val[,1]
+
+# rich vs poor
+
+fd_rich_poor <- val[,3] - val[,1]
+
+# rich vs median
+
+fd_rich_median <- val[,3] - val[,2]
+
+# median vs 2nd lowest
+
+fd_median_2low <-  val[,2] - val[,4]
+
+#2nd highest vs 2nd lowest
+
+fd_2high_2low <- val[,5] - val[,4]
+
+
+# now some simulations for points
+
+sim_vals <- matrix(NA, nrow = nsim, ncol = length(unique(bes$p_gross_household)))
+
+for (i in 1:15) {
+  
+  ova_X[, 2:15] <- 0
+
+# cool thing: the first row is just the intercept, so these
+# lines still work for getting the reference category sims!
+
+  ova_X[, i] <- 1
+  
+  sim_vals[,i] <- apply(S%*%t(ova_X),1, mean)
+  
+}
+
+
+```
+
+```{r grd-income-plots, fig.cap = "Simulated GRD scores between income conditions and first differences between scenarios", fig.width=6, fig.height=7}
+
+
+par(mfrow = c(3, 2))
+
+# expected values of GRD
+
+plot(
+  x = seq(1, 15, length.out = dim(sim_vals)[2]),
+  y = colMeans(sim_vals),
+  ylim = c(0.3, 0.7),
+  xlim = c(0, 16),
+  xaxt = "n",
+  bty = "n",
+  las = 1,
+  xlab = "Income categories",
+  ylab = "GRD score (95% CI)",
+  main = "",
+  pch = 16
+)
+
+segments(
+  x0 = 1:15,
+  y0 = apply(sim_vals, 2, quantile, probs = 0.025),
+  y1 = apply(sim_vals, 2, quantile, probs = 0.975),
+  lwd = 1,
+  lend = 1
+)
+
+axis(1, c(1, 15), labels = c("Under £5,000", "£150,000 and over"))
+
+rect(xleft = 6.5, xright = 7.5, ybottom = 0.45, ytop = 0.53)
+
+segments(
+  x0 = 7,
+  y0 = 0.53,
+  y1 = 0.61,
+  lwd = 1,
+  lend = 1
+)
+
+text(7, 0.65, "Median (£30,000 to £34,999) income", cex = 0.65)
+
+
+
+
+# median - poor
+
+hist(fd_median_poor, xlim = c(-0.25, 0), ylim = c(0, 260), main = "", xlab = "Simulated first differences \n Median income vs lowest bracket")
+abline(
+  v = quantile(fd_median_poor, c(0.025, 0.975)),
+  col = "grey",
+  lty = "dashed"
+)
+text(mean(fd_median_poor), 250, round(mean(fd_median_poor), 3))
+legend(-0.07, 260, legend=c("CI (95%)"),
+       col=c("darkgrey"), lty=2, cex=0.5)
+
+
+# rich - poor
+
+hist(fd_rich_poor, xlim = c(-0.5, 0), ylim = c(0, 350), main = "", xlab = "Simulated first differences \n Rich income vs lowest bracket")
+abline(
+  v = quantile(fd_rich_poor, c(0.025, 0.975)),
+  col = "grey",
+  lty = "dashed"
+)
+text(mean(fd_rich_poor), 350, round(mean(fd_rich_poor), 3))
+legend(-0.1, 260, legend=c("CI (95%)"),
+       col=c("darkgrey"), lty=2, cex=0.5)
+
+# rich vs median
+
+hist(fd_rich_median, xlim = c(-0.25, 0.15), ylim = c(0, 400), main = "", xlab = "Simulated first differences \n Rich income vs median bracket")
+abline(
+  v = quantile(fd_rich_median, c(0.025, 0.975)),
+  col = "grey",
+  lty = "dashed"
+)
+text(mean(fd_rich_median), 380, round(mean(fd_rich_median), 3))
+legend(0.05, 260, legend=c("CI (95%)"),
+       col=c("darkgrey"), lty=2, cex=0.5)
+
+# median vs 2nd lowest
+
+hist(fd_median_2low, xlim = c(-0.25, 0.15), ylim = c(0, 400), main = "", xlab = "Simulated first differences \n Median income vs 2nd lowest bracket")
+abline(
+  v = quantile(fd_median_2low, c(0.025, 0.975)),
+  col = "grey",
+  lty = "dashed"
+)
+text(mean(fd_median_2low), 380, round(mean(fd_median_2low), 3))
+legend(0.05, 260, legend=c("CI (95%)"),
+       col=c("darkgrey"), lty=2, cex=0.5)
+
+# 2nd highest vs 2nd lowest
+
+hist(fd_2high_2low, xlim = c(-0.25, 0.15), ylim = c(0, 400), main = "", xlab = "Simulated first differences \n 2nd highest income vs 2nd lowest bracket")
+abline(
+  v = quantile(fd_2high_2low, c(0.025, 0.975)),
+  col = "grey",
+  lty = "dashed"
+)
+text(mean(fd_2high_2low), 380, round(mean(fd_2high_2low), 3))
+legend(0.05, 260, legend=c("CI (95%)"),
+       col=c("darkgrey"), lty=2, cex=0.5)
+
+
+```
+
+
+```{r SEM-tab}
+
+kbl(coefs_psem, booktabs = T, linesep = "") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  add_footnote("Models fit using piecewiseSEM. RRV = Radical right vote. *p < .05, **p < 0.01 , ***p < 0.001", notation="none") %>%
+  cat(., file = "figures/tab3.html")
+
+kbl(coefs_psem, booktabs = T, linesep = "") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  add_footnote("Models fit using piecewiseSEM. RRV = Radical right vote. *p < .05, **p < 0.01 , ***p < 0.001", notation="none")
+  
+
+r2_psem <- summary(main_psem)$R2
+
+kbl(r2_psem) %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  cat(., file = "figures/tab4.html")
+
+kbl(r2_psem, booktabs = T, linesep = "") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+
+```
+
+# SDO is related to both cultural end economic prejudice
+
+```{r prej-robustness}
+
+# this needs a new package
+
+# install.packages ("scales")
+
+library(scales)
+
+# recoding the individual prejudice values
+
+rev_var <- function(variable) {
+  
+  new_var <- (variable * -1) + max(variable, na.rm = T)
+  
+  return(new_var)
+  
+}
+
+bes$immigEcon <- scales::rescale(bes$immigEcon, to = c(0, 1))
+bes$immigEcon <- rev_var(bes$immigEcon)
+
+bes$immigCultural <- scales::rescale(bes$immigCultural, to = c(0, 1))
+bes$immigCultural <- rev_var(bes$immigCultural)
+
+```
+
+
+
+
+```{r prej-robustness2, results = 'asis'}
+
+# is SDO correlated with economic prejudice?
+
+econ_prej <- lm(immigEcon ~ sdo + gender + age + factor(p_education) + p_gross_household, data = bes)
+
+cultural_prej <- lm(immigCultural ~ sdo + gender + age + factor(p_education) + p_gross_household, data = bes)
+
+stargazer(econ_prej, cultural_prej, type = "latex", font.size = "tiny", no.space = T, omit.stat=c("ser","f"), star.char = c("*", "**", "***"), star.cutoffs = c(.05, .01, .001), notes = c("\\parbox[t]{4cm}{*p < .05, **p < .01, ***p < .001}", "Standard errors in parentheses", "Reference categories: Education - No Qualification"), notes.append = F, dep.var.labels=c("Economic prejudice","Cultural prejudice"),covariate.labels=c("SDO", "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income"), header = F, title = "Models regressing individual prejudce scale items on SDO", out = "figures/tab5.html" )
+
+```
+
+
+```{r urbanska_guimond-table, results = "asis"}
+
+stargazer(mod1_u, mod2_u, mod3_u, type = "latex", font.size = "tiny", no.space = T, omit.stat=c("ser","f"), star.char = c("*", "**", "***"), star.cutoffs = c(.05, .01, .001), notes = c("\\parbox[t]{4cm}{*p < .05, **p < .01, ***p < .001}", "Standard errors in parentheses"), notes.append = F, dep.var.labels=c("SDO","Prejudice", "RR voting intention"),covariate.labels=c("GRD", "IRD", "SDO", "Prejudice"), header = F, title = "Analysis of observable implications using data from Urbanska and Guimond (2018)", out = "figures/tab6.html")
+
+```
+
+# Google trends robustness checks
+
+```{r google-trends, fig.height=5, fig.width=9, fig.cap = "Google trends popularity of various search terms in 2019"}
+
+
+par(mfrow = c(2,3))
+
+# UKIP
+
+# This collects data, but since the API does not allow for a lot of calls at the same time, one needs to save the data for a later time
+
+# res_ukip_2019 <- gtrends(c("UKIP"),geo=c("GB"), time = "2019-01-01 2019-12-31", gprop="web")
+
+# saveRDS(res_ukip_2019, file = "gtrends/gtrends_ukip.rds")
+
+# loading data
+
+gtrends_ukip <- readRDS("gtrends/gtrends_ukip.rds")
+
+res_ukip_2019 <- gtrends_ukip$interest_over_time
+
+res_ukip_2019 <- res_ukip_2019 %>%
+    mutate(hits = as.numeric(hits), date = as.Date(date)) %>%
+    replace(is.na(.), 0)
+
+plot(
+  res_ukip_2019$date,
+  res_ukip_2019$hits,
+  type = "l",
+  xlab = "Date",
+  ylab = "Relative popularity on Google",
+  main = "UKIP",
+  bty = "n",
+  ylim = c(0, 100)
+)
+
+abline(v = c(res_ukip_2019[10, 1], res_ukip_2019[13, 1]), lty = "dashed")
+
+abline(v = res_ukip_2019[20, 1], lty = "dotted")
+
+abline(v = res_ukip_2019[20, 1], lty = "dotted")
+
+abline(v = res_ukip_2019[49, 1])
+
+# Labour
+
+# res_labour_2019 <- gtrends(c("Labour"),geo=c("GB"), time = "2019-01-01 2019-12-31", gprop="web")
+
+# saveRDS(res_labour_2019, file = "gtrends/gtrends_labour.rds")
+
+gtrends_labour <- readRDS("gtrends/gtrends_labour.rds")
+
+res_labour_2019 <- gtrends_labour$interest_over_time
+
+res_labour_2019 <- res_labour_2019 %>%
+    mutate(hits = as.numeric(hits), date = as.Date(date)) %>%
+    replace(is.na(.), 0)
+
+plot(
+  res_labour_2019$date,
+  res_labour_2019$hits,
+  type = "l",
+  xlab = "Date",
+  ylab = "Relative popularity on Google",
+  main = "Labour",
+  bty = "n",
+  ylim = c(0, 100)
+)
+
+abline(v = c(res_labour_2019[10, 1], res_labour_2019[13, 1]), lty = "dashed")
+
+abline(v = res_labour_2019[20, 1], lty = "dotted")
+
+abline(v = res_labour_2019[49, 1])
+
+# res_con_2019 <- gtrends(keyword = "Conservatives", geo=c("GB"), time = "2019-01-01 2019-12-31", gprop="web")
+
+#saveRDS(res_con_2019, file = "gtrends/gtrends_con.rds")
+
+
+gtrends_con <- readRDS("gtrends/gtrends_con.rds")
+
+res_con_2019 <- gtrends_con$interest_over_time
+
+res_con_2019 <- res_con_2019 %>%
+    mutate(hits = as.numeric(hits), date = as.Date(date)) %>%
+    replace(is.na(.), 0)
+
+plot(
+  res_con_2019$date,
+  res_con_2019$hits,
+  type = "l",
+  xlab = "Date",
+  ylab = "Relative popularity on Google",
+  main = "Conservatives",
+  bty = "n",
+  ylim = c(0, 100)
+)
+
+abline(v = c(res_con_2019[10, 1], res_con_2019[13, 1]), lty = "dashed")
+
+abline(v = res_con_2019[20, 1], lty = "dotted")
+
+abline(v = res_con_2019[49, 1])
+
+legend(y = 100, x = res_con_2019[22, 1], legend=c("BES W15 fieldwork", "EU election", "General electon"),
+       col="black", lty=c(2,3,1), cex=0.7)
+
+# res_libdem_2019 <- gtrends(keyword = "Liberal Democrats", geo=c("GB"), time = "2019-01-01 2019-12-31", gprop="web")
+
+# saveRDS(res_libdem_2019, file = "gtrends/gtrends_libdem.rds")
+
+gtrends_libdem <- readRDS("gtrends/gtrends_libdem.rds")
+
+res_libdem_2019 <- gtrends_libdem$interest_over_time
+
+res_libdem_2019 <- res_libdem_2019 %>%
+    mutate(hits = as.numeric(hits), date = as.Date(date)) %>%
+    replace(is.na(.), 0)
+
+plot(
+  res_libdem_2019$date,
+  res_libdem_2019$hits,
+  type = "l",
+  xlab = "Date",
+  ylab = "Relative popularity on Google",
+  main = "Liberal Democrats",
+  bty = "n",
+  ylim = c(0, 100)
+)
+
+abline(v = c(res_libdem_2019[10, 1], res_libdem_2019[13, 1]), lty = "dashed")
+
+abline(v = res_libdem_2019[20, 1], lty = "dotted")
+
+abline(v = res_libdem_2019[49, 1])
+
+# res_genel_2019 <- gtrends(keyword = "General Election", geo=c("GB"), time = "2019-01-01 2019-12-31", gprop="web")
+
+# saveRDS(res_genel_2019, file = "gtrends/gtrends_genel.rds")
+
+gtrends_genel <- readRDS("gtrends/gtrends_genel.rds")
+
+res_genel_2019 <- gtrends_genel$interest_over_time
+
+res_genel_2019 <- res_genel_2019 %>%
+    mutate(hits = as.numeric(hits), date = as.Date(date)) %>%
+    replace(is.na(.), 0)
+
+plot(
+  res_genel_2019$date,
+  res_genel_2019$hits,
+  type = "l",
+  xlab = "Date",
+  ylab = "Relative popularity on Google",
+  main = "General Election",
+  bty = "n",
+  ylim = c(0, 100)
+)
+
+abline(v = c(res_genel_2019[10, 1], res_genel_2019[13, 1]), lty = "dashed")
+
+abline(v = res_genel_2019[20, 1], lty = "dotted")
+
+abline(v = res_genel_2019[49, 1])
+
+
+# res_immig_2019 <- gtrends(keyword = "Immigrants", geo=c("GB"), time = "2019-01-01 2019-12-31", gprop="web")
+
+# saveRDS(res_immig_2019, file = "gtrends/gtrends_immig.rds")
+
+gtrends_immig <- readRDS("gtrends/gtrends_immig.rds")
+
+res_immig_2019 <- gtrends_immig$interest_over_time
+
+res_immig_2019 <- res_immig_2019 %>%
+    mutate(hits = as.numeric(hits), date = as.Date(date)) %>%
+    replace(is.na(.), 0)
+
+plot(
+  res_immig_2019$date,
+  res_immig_2019$hits,
+  type = "l",
+  xlab = "Date",
+  ylab = "Relative popularity on Google",
+  main = "Immigrants",
+  bty = "n",
+  ylim = c(0, 100)
+)
+
+abline(v = c(res_immig_2019[10, 1], res_immig_2019[13, 1]), lty = "dashed")
+
+abline(v = res_immig_2019[20, 1], lty = "dotted")
+
+abline(v = res_immig_2019[49, 1])
+
+
+
+```
+
+# Adding RWA into the equation
+
+
+```{r rwa, results = "asis"}
+
+stargazer(mod1, mod1_a, mod2_a, type = "latex", no.space = T, font.size = "tiny", omit.stat=c("ser","f"), star.char = c("*", "**", "***"), star.cutoffs = c(.05, .01, .001), notes = c("\\parbox[t]{4cm}{*p < .05, **p < .01, ***p < .001}", "Standard errors in parentheses", "Reference categories: Education - No Qualification"), notes.append = F, dep.var.labels=c("SDO", "RWA"),covariate.labels=c("GRD","RWAw14", "IRD", "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income", "Urban"), header = F, title = "Robustness ckeck incuding RWA using Wave 15 and Wave 21 data", out = "figures/tab1_rwa.html")
+
+```
+
+# Analysing ethnic minorities
+
+```{r grd-ethnic, warning = F}
+
+# analysis of the sample by ethnic group
+
+t1 <- t.test(sdo ~ p_ethnicity, data = bes_full) # no difference between
+
+mod_inc <- lm(sdo ~ factor(p_gross_household), data = bes_full[bes_full$p_ethnicity == 0,]) # no difference
+
+t2 <- t.test(grd ~ p_ethnicity, data = bes_full) # grd is higher for White Britons
+
+t3 <- t.test(immig_att ~ p_ethnicity, data = bes_full) # prejudice is higher for White Britons
+
+mod1_test <- lm(sdo ~ grd * p_ethnicity + ird + gender + age + factor(p_education) + p_gross_household + urban, data = bes_full) 
+
+# grd does not have differential effects between groups
+
+mod2_test <- lm(immig_att ~ sdo*p_ethnicity  + gender + age + factor(p_education) + p_gross_household + urban , data = bes_full) # high-sdo white britons tend to be more anti-immigrant than high-sdo non-white brits but this is only significant at p < 0.10
+
+
+tidytab <- rbind(tidy(t1), tidy(t2), tidy(t3))
+
+tidytab <- tidytab[,c(1,2,3,7,8)]
+
+rownames(tidytab) <- c("SDO", "GRD", "Prejudice")
+
+colnames(tidytab) <- c("Difference", "non-White mean", "White Mean", "95% CI low", "95% CI high")
+
+tidytab <- round(tidytab, 2)
+
+kbl(tidytab, row.names = T) %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  add_footnote("Two-sided t-tests.", notation="none") %>%
+  cat(., file = "t_res.html")
+
+kbl(tidytab, booktabs = T, linesep = "", row.names = T) %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  add_footnote("Two-sided t-tests.", notation="none")
+
+```
+
+```{r diff-eff, results = "asis"}
+
+stargazer(mod_inc, type = "latex", no.space = T, font.size = "tiny", omit.stat=c("ser","f"), star.char = c("*", "**", "***"), star.cutoffs = c(.05, .01, .001), notes = c("\\parbox[t]{4cm}{*p < .05, **p < .01, ***p < .001}"), notes.append = F, dep.var.labels="SDO", header = F, title = "SDO distribution in the ethnic minority group dependent on their class", out = "figures/tab_inc.html")
+
+stargazer(mod1_test, mod2_test, type = "latex", no.space = T, font.size = "tiny", omit.stat=c("ser","f"), star.char = c("*", "**", "***"), star.cutoffs = c(.05, .01, .001), notes = c("\\parbox[t]{4cm}{*p < .05, **p < .01, ***p < .001}", "Standard errors in parentheses", "Reference categories: Education - No Qualification"), notes.append = F, dep.var.labels=c("SDO","Prejudice"),covariate.labels=c("GRD", "SDO", "White Briton", "IRD" , "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income","Urban", "GRD*White Briton", "SDO*White Briton"), header = F, title = "Models 1 and 2 including ethnic minorities and an interaction between ethnic minority status and GRD/SDO", out = "figures/tab1_test.html")
+
+```
+
+```{r full, results = "asis"}
+
+mod1_full <- lm(sdo ~ grd + ird + gender + age + factor(p_education) + p_gross_household + factor(urban) + p_ethnicity, data = bes_full)
+
+
+mod2_full <- lm(immig_att ~ sdo  + gender + age + factor(p_education) + p_gross_household + factor(urban) + p_ethnicity, data = bes_full)
+
+
+# this prepares the data for a multinomial logit
+
+bes_full$generalElectionVote <- factor(bes_full$generalElectionVote)
+bes_full$generalElectionVote <- relevel(bes_full$generalElectionVote, ref = "0")
+
+# turns data into the "wide" format
+
+bes2_full <- mlogit.data(data = bes_full, choice = "generalElectionVote", shape = "wide")
+
+# and runs the multinomial logit regression
+# here, it only has chooser(individual)-specific covariates
+
+mod3_full <- mlogit(generalElectionVote ~ 0 | immig_att + gender + age + factor(p_education) + p_gross_household + factor(urban) + p_ethnicity, data = bes2_full,  reflevel = "0")
+
+
+# simulating again...
+
+S <- sim_func(nsim, coef(mod3_full), varcov = vcov(mod3_full))
+
+J <- length(unique(bes_full$generalElectionVote))  # Number of categories
+k <- 10 # number of independent variables + intercept
+
+
+# store in an array 
+beta_S <- array(0, dim = c(J, k, nsim))
+
+
+# check dimensions
+dim(beta_S)
+
+
+# fill the array with the sampling distribution of betas
+for(sim in 1:nsim) {
+  beta_S[-1, ,sim] <- matrix(S[sim,], 
+                             ncol = k, 
+                             byrow = F)
+}
+
+# OVA again
+
+X <- as.matrix(cbind(1, bes_full$immig_att, bes_full$gender, bes_full$age, dummy_cols(bes_full$p_education)[,-c(1,2)],bes_full$p_gross_household, bes_full$urban, bes_full$p_ethnicity))
+
+# Set up your scenarios
+n_scenarios <- 2 # Number of scenarios
+cases <- array(NA, c(dim(X),
+                     n_scenarios))  
+
+# put in te OVA dataset as all of the scenarios
+
+cases[, , ] <- X
+
+# selecting which column has the immigration attitudes
+
+sel <- 2
+
+cases[, sel, 1] <- rnorm(n = nrow(bes_full), mean = mean(val2[,1]), sd = sd(val2[,1]))
+cases[, sel, 2] <- rnorm(n = nrow(bes_full), mean = mean(val2[,2]), sd = sd(val2[,2]))
+
+V  <-
+  array(NA, 
+        dim = c(nrow(X),       # number of observations
+                J,             # number of categories
+                nsim,          # number of simulations
+                n_scenarios))  # number of scenarios
+
+# loop over the scenarios
+for(i in 1:n_scenarios){
+  V[,,,i] <- apply(beta_S[,,], c(1,3), 
+                   function(bs) cases[,,i] %*% bs)
+}
+
+# dimensions again
+dim(V)
+
+# sum of all of the expected utilities to vote for parties
+Sexp <- apply(V, c(1,3,4), function(v) sum(exp(v)))
+
+
+
+# predicted probabilities of voting for each party
+P <- array(NA, c(nsim, J, 2))
+for (scen in 1:n_scenarios) {
+  for (category in 1:J) {
+    P[, category, scen] <- 
+      apply(exp(V[, category, , scen]) / Sexp[, , scen], 2, mean)
+  }
+}
+# quantities of interest
+# low prejudice voters
+QoI0Mean <- apply(P[, , 1], 2, mean)
+QoI0CI <-
+  apply(P[, , 1], 2, function(x)
+    quantile(x, probs = c(0.025, 0.975)))
+# high prejudice voters
+QoI1Mean <- apply(P[, , 2], 2, mean)
+QoI1CI <-
+  apply(P[, , 2], 2, function(x)
+    quantile(x, probs = c(0.025, 0.975)))
+
+
+stargazer(mod1_full, mod2_full, type = "latex", no.space = T, font.size = "tiny", omit.stat=c("ser","f"), star.char = c("*", "**", "***"), star.cutoffs = c(.05, .01, .001), notes = c("\\parbox[t]{4cm}{*p < .05, **p < .01, ***p < .001}", "Standard errors in parentheses", "Reference categories: Education - No Qualification"), notes.append = F, dep.var.labels=c("SDO","Prejudice"),covariate.labels=c("GRD", "IRD", "SDO", "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income","Urban", "White Briton"), header = F, title = "Models 1 and 2 including ethnic minorities", out = "figures/tab1_full.html")
+
+stargazer(mod3_full, type = "latex", no.space = T, font.size = "tiny", single.row = T, star.char = c("*", "**", "***"), star.cutoffs = c(.05, .01, .001), notes = c("\\parbox[t]{4cm}{*p < .05, **p < .01, ***p < .001}", "Standard errors in parentheses", "Reference categories: Education - No Qualification", "Vote choice - Would not vote"), notes.append = F, dep.var.labels=c("General election vote"),covariate.labels=c("Intercept: Conservatives", "Intercept: Labour", "Intercept: LibDem", "Intercept: Plaid Cymru", "Intercept: UKIP", "Intercept: Greens", "Intercept: Other party", "Prejudice: Conservatives", "Prejudice: Labour", "Prejudice: LibDem", "Prejudice: Plaid Cymru", "Prejudice: UKIP", "Prejudice: Greens", "Prejudice: Other party", "Female: Conservatives", "Female: Labour", "Female: LibDem", "Female: Plaid Cymru", "Female: UKIP", "Female: Greens", "Female: Other party", "Age: Conservatives", "Age: Labour", "Age: LibDem", "Age: Plaid Cymru", "Age: UKIP", "Age: Greens", "Age: Other party", "Below university education: Conservatives", "Below university education: Labour", "Below university education: LibDem", "Below university education: Plaid Cymru", "Below university education: UKIP", "Below university education: Greens", "Below university education: Other party", "University education: Conservatives", "University education: Labour", "University education: LibDem", "University education: Plaid Cymru", "University education: UKIP", "University education: Greens", "University education: Other party", "Unspecified education: Conservatives", "Unspecified education: Labour", "Unspecified education: LibDem", "Unspecified education: Plaid Cymru", "Unspecified education: UKIP", "Unspecified education: Greens", "Unspecified education: Other party", "Household income: Conservatives", "Household income: Labour", "Household income: LibDem", "Household income: Plaid Cymru", "Household income: UKIP", "Household income: Greens", "Household income: Other party", "Urban: Conservatives", "Urban: Labour", "Urban: LibDem", "Urban: Plaid Cymru", "Urban: UKIP", "Urban: Greens", "Urban: Other party", "White Briton: Conservatives", "White Briton: Labour", "White Briton: LibDem", "White Briton: Plaid Cymru", "White Briton: UKIP", "White Briton: Greens", "White Briton: Other party"), header = F, title = "Model 3 including ethnic minorities", out = "figures/tab2_full.html")
+
+```
+
+```{r pred-prob-fd-full, fig.cap = "First differences in predicted probabilities of vote intention based on prejudice scenarios with ethnic minoritis included", fig.height = 6, fig.width = 10, fig.asp=0.65}
+
+
+# first differences again, yayyy
+QoIFD <- P[, , 2] - P[, , 1]
+
+QoIFDMean <- apply(QoIFD, 2, mean)
+
+QoIFDCI <-
+  apply(QoIFD, 2, function(x)
+    quantile(x, probs = c(0.025, 0.975)))
+
+fd_seq <- seq(0,1, length.out = length(QoIFDMean))
+
+plot(
+  x = fd_seq,
+  y = QoIFDMean,
+  xlim = c(-0.025, 1.025),
+  ylim = c(-0.1, 0.1),
+  xaxt = "n",
+  bty = "n",
+  las = 1,
+  xlab = "",
+  ylab = "First difference (95% CI)",
+  main = "",
+  font.main = 1
+)
+
+abline(h = 0, lwd = 1, lty = "dashed", col = "black")
+points(
+  x = fd_seq,
+  y = QoIFDMean,
+  pch = 19,
+  cex = 1
+)
+
+segments(
+  x0 = fd_seq,
+  y0 = QoIFDCI[1,],
+  y1 = QoIFDCI[2,],
+  lwd = 1,
+  lend = 1
+)
+abline(v = fd_seq + (fd_seq[1]-fd_seq[2])/2,
+       lty = "dashed",
+       col = "lightgrey")
+abline(h = seq(0.05,1, by = 0.05), lty = "dashed",
+       col = "lightgrey")
+abline(h = seq(-1,-0.05, by = 0.05), lty = "dashed",
+       col = "lightgrey")
+
+axis(1, fd_seq, labels = c("No vote", "Conservative", "Labour", "LibDem", "Plaid Cymru", "UKIP", "Greens", "Other"))
+
+
+
+```
+
+
+# Objective vs subjective economics
+
+```{r income}
+
+bes_income <- readRDS("besW15_income.rds")
+
+
+mod_income <- polr(
+  as.factor(p_gross_household) ~ p_ethnicity + as.factor(p_education) + gender + age,
+  data = bes_income
+)
+
+summary(mod_income)
+
+```
+
+```{r income-sim}
+
+nsim <- 1000
+
+S <- mvrnorm(nsim, c(coef(mod_income), mod_income$zeta), vcov(mod_income))
+
+ethnicity_seq <- c(0, 1)
+
+
+X <- mod_income$model
+
+
+X <- cbind(X$p_ethnicity, dummy_cols(X$`as.factor(p_education)`)[,-c(1,2)], X$gender, X$age)
+
+X <- as.matrix(X)
+
+cases <- array(NA, c(dim(X), length(ethnicity_seq)))
+
+cases[, ,] <- X
+
+# Change the ethnicity of everyone
+
+for (i in 1:length(ethnicity_seq)) {
+  cases[, 1, i] <- ethnicity_seq[i]
+}
+
+U <- array(dim = c(nrow(X), nsim, length(ethnicity_seq)))
+
+for (i in 1:length(ethnicity_seq)) {
+  U[, , i] <- apply(S[, 1:6], 1, function(s)
+    cases[, , i] %*% s)
+}
+
+tau <- S[, 7:9]
+
+ncat <- ncol(tau) + 1
+
+probs <- array(NA, c(ncat, nsim, length(ethnicity_seq)))
+
+
+for (i in 1:length(ethnicity_seq)) {
+  # calculate probabilities
+  probs[1, , i] <-
+    apply(exp(tau[, 1] - U[, , i]) / (1 + exp(tau[, 1] - U[, , i])), 2, mean)
+
+  for (j in 2:(ncat - 1)) {
+    probs[j, , i] <-
+      apply(exp(tau[, j] - U[, , i]) / (1 + exp(tau[, j] - U[, , i])) -
+        exp(tau[,j - 1] - U[, , i]) / (1 + exp(tau[,j - 1] - U[, , i])), 2, mean)
+  }
+
+  probs[ncat, , i] <-
+    apply(1 - exp(tau[, ncat - 1] - U[, , i]) / 
+            (1 + exp(tau[, ncat - 1] - U[, , i])), 2, mean)
+}
+
+fd <- probs[,,2] - probs[,,1]  
+
+fd_mean <- rowMeans(fd)*100
+
+fd_quantiles <- apply(fd, 1, quantile, c(0.025, 0.975))*100
+
+
+```
+
+
+```{r, plot-income, fig.cap = "Results of an ordinal logit comparing White Britons and ethnic minorities in their probability to report income in given quartiles", fig.height = 6, fig.width = 10, fig.asp=0.65}
+# plotting
+
+par(mar = c(5, 6, 4, 2))
+
+plot(y = fd_mean,
+     x = seq(-5,5, length.out = 4),
+       xaxt = "n",
+  bty = "n",
+  las = 1,
+  xlab = "Income quartiles",
+  ylab = "White Britons more/less likely to be in income \n category than minorities? In percent (95% CI)",
+  main = "",
+  font.main = 1,
+  ylim = c(-6,6)
+     )
+
+points(
+  x = seq(-5,5, length.out = 4),
+  y = fd_mean,
+  pch = 19,
+  cex = 1
+)
+
+lines(
+  x = seq(-5, 5, length.out = 4),
+  y = fd_mean,
+  lwd = 1.5
+)
+
+segments(
+  x0 = seq(-5,5, length.out = 4),
+  y0 = fd_quantiles[1,],
+  y1 = fd_quantiles[2,],
+  lwd = 1,
+  lend = 1
+)
+     
+abline(h = 0, lty = "dashed")
+
+axis(side = 1, at = seq(-5,5, length.out = 4), labels = c("<£20k", "£20-£30k", "£30-£50k", ">£50k"))
+```
+
+# Considering alternative theoretical paths
+
+```{r sem-code2}
+
+# Making radical right vote choice binary
+
+bes_auth$rr_vote <- ifelse(bes_auth$generalElectionVote == 6, 1, 0)
+
+# Dummies for education
+
+bes_auth <- dummy_cols(bes_auth, 
+                   select_columns = "p_education")
+
+
+
+# Running the SEM
+
+main_psem <- psem(
+  lm(grd ~ sdo + auth + ird + gender + age + p_education_2 +  p_education_3 +  p_education_4 + p_gross_household + urban , data = bes_auth),
+  
+  lm(immig_att ~  sdo + auth + grd  + ird + gender + age + p_education_2 +  p_education_3 +  p_education_4 + p_gross_household + urban , data = bes_auth), 
+  
+  glm(rr_vote ~ grd + sdo + auth + immig_att + ird + gender + age + p_education_2 +  p_education_3 +  p_education_4 + p_gross_household + urban, family = binomial(link = "logit"), data = bes_auth),
+  
+  data = bes
+  
+)
+
+
+# Table for the results
+
+coefs_psem <- summary(main_psem)$coefficients
+
+coefs_psem <- coefs_psem[,-c(5, 8)]
+
+coefs_psem <- modify_if(coefs_psem, ~is.numeric(.), ~round(., 2))
+
+coefs_psem[,1] <- c("GRD", "GRD","GRD","GRD","GRD","GRD","GRD","GRD", "GRD", "GRD", "Prejudice", "Prejudice","Prejudice","Prejudice","Prejudice","Prejudice","Prejudice","Prejudice", "Prejudice", "Prejudice", "Prejudice", "RRV", "RRV","RRV","RRV","RRV","RRV","RRV","RRV","RRV","RRV", "RRV", "RRV")
+
+coefs_psem[,2] <- c("SDO", "RWA" , "IRD", "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income", "Urban", "SDO", "RWA", "GRD", "IRD", "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income", "Urban", "GRD", "SDO", "RWA", "Prejudice", "IRD", "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income", "Urban")
+
+kbl(coefs_psem) %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  add_footnote("Models fit using piecewiseSEM. RRV = Radical right vote. *p < .05, **p < 0.01 , ***p < 0.001", notation="none") %>%
+  cat(., file = "sem_res2.html")
+
+r2_psem <- summary(main_psem)$R2
+
+kbl(r2_psem) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+
+```
+
+
+```{r sem-plot2}
+
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(rsvg)
+library(magrittr)
+
+SEM_plot <- grViz("     
+digraph CFA{
+
+# main
+node [shape=rectangle]
+GRD; 
+SDO;
+Prejudice;
+RRV;
+
+#regressions
+SDO -> GRD [label='0.16***'];
+SDO -> Prejudice [label='0.31***'];
+
+GRD -> Prejudice [label='0.31***'];
+GRD -> RRV [label='1.02*'];
+
+Prejudice -> RRV [label='2.67***']
+
+}      
+")
+
+SEM_plot %>%
+export_svg() %>%
+charToRaw %>%
+rsvg_pdf("figures/fig_sem_alt.pdf")
+
+
+```
+
+
+# Adding left-right orientation as a control
+
+
+```{r grd-sdo-lr}
+
+
+
+# number 1, GRD -> SDO
+
+mod1_lr <- lm(sdo ~ grd + ird + leftRight + gender + age + factor(p_education) + p_gross_household + factor(urban), data = bes_lr)
+
+# summary for checking results. note that the labels here are not informative
+
+summary(mod1_lr)
+
+
+
+
+
+mod2_lr <- lm(immig_att ~ sdo + leftRight + gender + age + factor(p_education) + p_gross_household + factor(urban), data = bes_lr)
+
+# summary for checking results. note that the labels here are not informative
+
+summary(mod2_lr)
+
+
+# this prepares the data for a multinomial logit
+
+bes_lr$generalElectionVote <- factor(bes_lr$generalElectionVote)
+bes_lr$generalElectionVote <- relevel(bes_lr$generalElectionVote, ref = "0")
+
+# turns data into the "wide" format
+
+bes2_lr <- mlogit.data(data = bes_lr, choice = "generalElectionVote", shape = "wide")
+
+# and runs the multinomial logit regression
+# here, it only has chooser(individual)-specific covariates
+
+mod3_lr <- mlogit(generalElectionVote ~ 0 | immig_att + leftRight + gender + age + factor(p_education) + p_gross_household + factor(urban), data = bes2_lr,  reflevel = "0")
+
+summary(mod3_lr)
+
+
+```
+
+
+```{r mod-tab1_lr, results = "asis"}
+
+stargazer(mod1_lr, mod2_lr, type = "latex", no.space = T, font.size = "tiny", omit.stat=c("ser","f"), star.char = c("*", "**", "***"), star.cutoffs = c(.05, .01, .001), notes = c("\\parbox[t]{4cm}{*p < .05, **p < .01, ***p < .001}", "Standard errors in parentheses", "Reference categories: Education - No Qualification"), notes.append = F, dep.var.labels=c("SDO","Prejudice"),covariate.labels=c("GRD", "IRD",  "SDO", "Left-Right ID", "Female", "Age", "Below university education", "University education", "Unspecified education", "Household income"), header = F, title = "Models 1 and 2 including left-right identification as a control variable", out = "figures/tab1_lr.html")
+
+
+```
+
+
+```{r mod-tab2_lr, results = "asis"}
+
+stargazer(mod3_lr, type = "latex", no.space = T, font.size = "tiny", single.row = T, star.char = c("*", "**", "***"), star.cutoffs = c(.05, .01, .001), notes = c("\\parbox[t]{4cm}{*p < .05, **p < .01, ***p < .001}", "Standard errors in parentheses", "Reference categories: Education - No Qualification", "Vote choice - Would not vote"), notes.append = F, dep.var.labels=c("General election vote"),covariate.labels=c("Intercept: Conservatives", "Intercept: Labour", "Intercept: LibDem", "Intercept: Plaid Cymru", "Intercept: UKIP", "Intercept: Greens", "Intercept: Other party", "Prejudice: Conservatives", "Prejudice: Labour", "Prejudice: LibDem", "Prejudice: Plaid Cymru", "Prejudice: UKIP", "Prejudice: Greens", "Prejudice: Other party", "Left-Right ID: Conservatives", "Left-Right ID: Labour", "Left-Right ID: LibDem", "Left-Right ID: Plaid Cymru", "Left-Right ID: UKIP", "Left-Right ID: Greens", "Left-Right ID: Other party", "Female: Conservatives", "Female: Labour", "Female: LibDem", "Female: Plaid Cymru", "Female: UKIP", "Female: Greens", "Female: Other party", "Age: Conservatives", "Age: Labour", "Age: LibDem", "Age: Plaid Cymru", "Age: UKIP", "Age: Greens", "Age: Other party", "Below university education: Conservatives", "Below university education: Labour", "Below university education: LibDem", "Below university education: Plaid Cymru", "Below university education: UKIP", "Below university education: Greens", "Below university education: Other party", "University education: Conservatives", "University education: Labour", "University education: LibDem", "University education: Plaid Cymru", "University education: UKIP", "University education: Greens", "University education: Other party", "Unspecified education: Conservatives", "Unspecified education: Labour", "Unspecified education: LibDem", "Unspecified education: Plaid Cymru", "Unspecified education: UKIP", "Unspecified education: Greens", "Unspecified education: Other party", "Household income: Conservatives", "Household income: Labour", "Household income: LibDem", "Household income: Plaid Cymru", "Household income: UKIP", "Household income: Greens", "Household income: Other party" ), header = F, title = "Model 3 including left-right identification as a control variable", out = "figures/tab2_lr.html")
+
+
+
+```
