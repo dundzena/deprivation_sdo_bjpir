@@ -1,5 +1,5 @@
 # Overview
- This repository includes replication material for the paper *"Entangled fates -- the rally effect around Europe due to Russia's war of aggression against Ukraine"*.
+ This repository includes replication material for the paper *"What makes ethnic majorities support the radical right? A combination of relative deprivation and social dominance approaches"*. The paper is published at the British Journal of Politics and International Relations.
 
 # Content
  - **analyses.rmd** Includes a file for the data manipulation and replication of all of the analyses and tables/figures included in the paper.
@@ -9,4 +9,4 @@
  - **tables** Contains all of the tables used for this manuscript in the .tex format.
 
 # Data
- - **European Social Survey**: https://ess.sikt.no/en/series/321b06ad-1b98-4b7d-93ad-ca8a24e8788a -- Specific data used are from Round 10.
+ - **British Election Study**: https://www.britishelectionstudy.com/data-objects/panel-study-data/ -- The waves used for this article can be downloaded free of charge from the BES.
