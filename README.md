@@ -7,8 +7,8 @@
  - **main.html** Includes the above mentioned code for easier viewing in a browser.
  - **clpm_code.R** Includes a code file that uses the full BES panel to run the cross-lagged panel model. Note that you will need to download the BES data yourself to run this.
  - **data** Includes a folder with all the cleaned data used for the analyses.
- - **figures** Includes a folder with all the figures generated from the code.
- - **tables** Includes a filder with all the tables generated from the code.
+ - **figures** Includes a folder with all the figures and tables generated from the code.
+
 
 # Data
  - **British Election Study**: https://www.britishelectionstudy.com/data-objects/panel-study-data/ -- The waves used for this article can be downloaded free of charge from the BES.
