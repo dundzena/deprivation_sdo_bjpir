@@ -1,5 +1,5 @@
 # Overview
- This repository includes replication material for the paper *"What makes ethnic majorities support the radical right? A combination of relative deprivation and social dominance approaches"*. The paper is published at the British Journal of Politics and International Relations.
+ This repository includes replication material for the paper *"What makes ethnic majorities support the radical right? A combination of relative deprivation and social dominance approaches"*. The paper is published at the British Journal of Politics and International Relations. Link to full paper: (https://journals.sagepub.com/doi/10.1177/13691481261426791)[https://journals.sagepub.com/doi/10.1177/13691481261426791].
 
 # Content
  - **data_cleaning.R** Includes a code file that is used to clean the data used for the article. Note that you will need to download the BES data yourself to run this.
